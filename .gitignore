@@ -1,0 +1,35 @@
+# Binaries and compiled objects
+/app
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Local SQLite databases and runtime state
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Test coverage and profiling output
+coverage/
+*.out
+*.prof
+
+# Visual Studio Code settings and workspace state
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# macOS metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes

@@ -3,7 +3,7 @@
 [One paragraph: what this program does and who would use it. Replace this
 whole file — it is your project's front door, and it is marked.]
 
-- **Student:** Canceal Cristian-Anton, group DWMD
+- **Student:** Canceal Cristian-Anton, group DMWD
 - **Project:** Project 1 - URL Shortener with Analytics
 - **Language:** Go
 
