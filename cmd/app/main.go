@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"atad-project/internal/storage"
 	"atad-project/internal/version"
 )
 
@@ -40,6 +41,21 @@ func run() error {
 	}
 
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "shortener.db"
+	}
+
+	store, err := storage.New(dbPath)
+	if err != nil {
+		return fmt.Errorf("initialize storage: %w", err)
+	}
+	defer func() {
+		if err := store.Close(); err != nil {
+			log.Error("failed closing storage", "error", err)
+		}
+	}()
 
 	mux := http.NewServeMux()
 
@@ -73,7 +89,11 @@ func run() error {
 	// state without restarting the container. If your project persists data,
 	// this clears what was persisted too.
 	mux.HandleFunc("POST /reset", func(w http.ResponseWriter, r *http.Request) {
-		// TODO: clear your own state here.
+		if err := store.Reset(); err != nil {
+			log.Error("failed to reset store", "error", err)
+			writeError(w, http.StatusInternalServerError, "internal_error", "failed to reset database state")
+			return
+		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 
