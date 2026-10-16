@@ -41,6 +41,10 @@ LABEL org.opencontainers.image.title="ATAD project" \
 # should not have it.
 RUN adduser -D -u 10001 app
 
+RUN mkdir -p /data && chown -R app:app /data && chmod 755 /data
+
+ENV DB_PATH=/data/shortener.db
+
 COPY --from=build /app /usr/local/bin/app
 USER app
 

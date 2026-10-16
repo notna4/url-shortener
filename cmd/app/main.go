@@ -14,8 +14,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -23,8 +25,15 @@ import (
 	"atad-project/internal/version"
 )
 
-// started is the moment the process came up; /health reports the difference.
-var started = time.Now()
+var (
+	started     = time.Now()
+	codePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,32}$`)
+)
+
+type createLinkRequest struct {
+	URL  string `json:"url"`
+	Code string `json:"code,omitempty"`
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -73,8 +82,6 @@ func run() error {
 		})
 	})
 
-	// The identity page. Replace the placeholders with your own details; the
-	// marking script reads this page.
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		fmt.Fprintf(w, `<!doctype html><html lang="en"><meta charset="utf-8">
@@ -85,9 +92,6 @@ func run() error {
 </body></html>`, version.Current().App, version.Current().App)
 	})
 
-	// Discards everything the service holds, so tests can start from a known
-	// state without restarting the container. If your project persists data,
-	// this clears what was persisted too.
 	mux.HandleFunc("POST /reset", func(w http.ResponseWriter, r *http.Request) {
 		if err := store.Reset(); err != nil {
 			log.Error("failed to reset store", "error", err)
@@ -98,6 +102,43 @@ func run() error {
 	})
 
 	// ---- your own routes go below -------------------------------------------
+
+	mux.HandleFunc("POST /links", func(w http.ResponseWriter, r *http.Request) {
+		var req createLinkRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
+			return
+		}
+
+		if req.URL == "" {
+			writeError(w, http.StatusBadRequest, "missing_url", "the url field is required")
+			return
+		}
+
+		parsedURL, err := url.ParseRequestURI(req.URL)
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Host == "" {
+			writeError(w, http.StatusBadRequest, "invalid_url", "url must be a valid absolute http or https link")
+			return
+		}
+
+		if req.Code != "" && !codePattern.MatchString(req.Code) {
+			writeError(w, http.StatusBadRequest, "invalid_code", "code must be 3-32 alphanumeric characters, dashes, or underscores")
+			return
+		}
+
+		link, err := store.CreateLink(req.URL, req.Code)
+		if err != nil {
+			if errors.Is(err, storage.ErrConflict) {
+				writeError(w, http.StatusConflict, "conflict", "specified code already exists")
+				return
+			}
+			log.Error("failed creating link", "error", err)
+			writeError(w, http.StatusInternalServerError, "internal_error", "failed to persist link")
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, link)
+	})
 
 	srv := &http.Server{
 		Addr:         ":8080",
