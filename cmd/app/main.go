@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -139,6 +140,27 @@ func run() error {
 
 		writeJSON(w, http.StatusCreated, link)
 	})
+
+	mux.HandleFunc("GET /{code}", func(w http.ResponseWriter, r *http.Request) {
+        code := r.PathValue("code")
+        if code == "" {
+            writeError(w, http.StatusNotFound, "not_found", "link not found")
+            return
+        }
+
+        targetURL, err := store.GetAndTrackLink(r.Context(), code)
+        if err != nil {
+            if errors.Is(err, sql.ErrNoRows) || errors.Is(err, storage.ErrNotFound) {
+                writeError(w, http.StatusNotFound, "not_found", "link not found")
+                return
+            }
+            log.Error("failed retrieving link for redirect", "code", code, "error", err)
+            writeError(w, http.StatusInternalServerError, "internal_error", "failed to retrieve link")
+            return
+        }
+
+        http.Redirect(w, r, targetURL, http.StatusFound)
+    })
 
 	srv := &http.Server{
 		Addr:         ":8080",

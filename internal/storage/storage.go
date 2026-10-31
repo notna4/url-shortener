@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"errors"
@@ -132,6 +133,23 @@ func (s *Storage) insertLink(targetURL, code string) (*Link, error) {
 		return nil, fmt.Errorf("insert link: %w", err)
 	}
 	return &link, nil
+}
+
+func (s *Storage) GetAndTrackLink(ctx context.Context, code string) (string, error) {
+    var targetURL string
+    query := `SELECT url FROM links WHERE code = ?;`
+    err := s.db.QueryRowContext(ctx, query, code).Scan(&targetURL)
+    if err != nil {
+        if errors.Is(err, sql.ErrNoRows) {
+            return "", ErrNotFound
+        }
+        return "", fmt.Errorf("query link: %w", err)
+    }
+
+    updateQuery := `UPDATE links SET visits = visits + 1 WHERE code = ?;`
+    _, _ = s.db.ExecContext(ctx, updateQuery, code)
+
+    return targetURL, nil
 }
 
 func (s *Storage) Reset() error {
