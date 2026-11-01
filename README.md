@@ -52,7 +52,7 @@ curl -i http://localhost:8080/health
 
 Output:
 
-```bash
+```http
 HTTP/1.1 200 OK
 Content-Type: application/json
 Date: Sun, 01 Nov 2026 17:00:00 GMT
@@ -71,7 +71,7 @@ curl -i -X POST http://localhost:8080/links \
 
 Output:
 
-```bash
+```http
 HTTP/1.1 201 Created
 Content-Type: application/json
 Date: Sun, 01 Nov 2026 17:00:05 GMT
@@ -88,7 +88,7 @@ curl -i http://localhost:8080/CkcpapY
 
 Output:
 
-```bash
+```http
 HTTP/1.1 302 Found
 Location: https://google.com
 Date: Sun, 01 Nov 2026 17:00:10 GMT
@@ -107,11 +107,16 @@ docker run --rm ghcr.io/notna4/url-shortener:latest --version
 
 Output:
 
-```bash
-{"app":"atad-project","version":"0.0.0-dev","commit":"116af0d29cf24da9d77087e0d9e65af4f19f308b","built_at":"2026-11-01T00:21:33+02:00"}
+```json
+{
+  "app": "atad-project",
+  "version": "0.0.0-dev",
+  "commit": "116af0d29cf24da9d77087e0d9e65af4f19f308b",
+  "built_at": "2026-11-01T00:21:33+02:00"
+}
 ```
 
-### 5. Storage reset contract endpoint
+5. Storage reset contract endpoint
 
 ```bash
 curl -i -X POST http://localhost:8080/reset
@@ -119,6 +124,26 @@ curl -i -X POST http://localhost:8080/reset
 
 Output:
 
-```bash
+```http
 HTTP/1.1 204 No Content
+```
+
+6. Student landing page contract endpoint
+
+```bash
+curl -i http://localhost:8080/
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Date: Sun, 01 Nov 2026 18:02:39 GMT
+Content-Length: 213
+
+<!doctype html><html lang="en"><meta charset="utf-8">
+<title>atad-project</title><body>
+<h1>atad-project</h1>
+<p>Canceal Cristian-Anton, group DMWD</p>
+<p>Project 1: URL Shortener with Analytics</p>
+</body></html>%
 ```
